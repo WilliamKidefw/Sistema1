@@ -1,0 +1,160 @@
+<div th:fragment="mantener-proveedor">
+  <div id="mantener-proveedor" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">{{title}}</h4>
+        </div>
+        <div class="modal-body">
+          <form class="row" v-on:submit.prevent="guardarProveedor()">
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group">
+                          <label class="control-label">Ruc</label>
+                          <input type="text" maxlength="11" class="form-control" v-model="proveedor.ruc"  required />
+                      </div>                      
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Estado</label>
+                          <select id="cmb-estados" class="form-control" v-model="proveedor.estado">
+                              <option v-for="(estado,index) in estados"  v-bind:value="estado.id">{{estado.descripcion}}</option>
+                          </select>
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Nombre</label>
+                          <input type="text" class="form-control" v-model="proveedor.razonSocial" required />
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Telefono</label>
+                          <input type="text" class="form-control" v-model="proveedor.telefono" required />
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Email</label>
+                          <input type="email" class="form-control" v-model="proveedor.email" required />
+                      </div>                      
+                  </div>
+              </div>
+            <input type="submit" class="btn btn-default" value="Guardar" style="float:right" />
+          </form>
+        </div>
+        <div class="modal-footer">
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+<script>
+  var isUpdating=false;
+  var onMantenimientoListener;
+  var mantenerProveedor = new Vue({
+    el: '#mantener-proveedor',
+    data:{
+      title:'Mantener Proveedor',
+      proveedor:{
+        ruc:'',
+        razonSocial:'',          
+        telefono:'',
+        email:'',
+        estado:'3',
+      },
+      proveedorAuxiliar:{},
+      estados:[]
+    },
+    beforeCreate:function(){
+      //obtener la lista de estados de proveedor
+      EstadoService.get('proveedor')
+       .then((estados)=>{
+              this.estados=estados;
+       });
+    },
+    methods:{
+      guardarProveedor:function(){
+          this.close();            
+          //ANTES DE ACTUALIZAR
+          //evitar actualizar, si la data es la misma
+          if(isUpdating){
+              let shouldUpdate=false; //debera actualizar
+              for(var attr in this.proveedorAuxiliar)
+                if(this.proveedorAuxiliar[attr]!=this.proveedor[attr]){
+                  shouldUpdate=true;
+                  break;
+                }
+              //si no debera actualizarse, salir de aqui
+              if(!shouldUpdate){
+                onMantenimientoListener({error:1,message:'No hay datos para actualizar'});
+                return;
+             }
+          }
+          //AHORA SI GUARDAR O ACTUALIZAR
+          //guardar la data en el sistema (tanto actualizar como insertar)            
+          $.ajax({
+            url:'/proveedores',
+            method:(isUpdating?'put':'post'),
+            data:JSON.stringify(this.proveedor),
+            headers: {
+              "content-type": "application/json"                
+            },
+            success:(resp)=>{
+              this.proveedor.estadodes=$('#cmb-estados').find(':selected').text();                              
+              if(resp.error==0)
+                //si se esta actualizando
+                if(isUpdating){
+                    for(var attr in this.proveedorAuxiliar)
+                      this.proveedorAuxiliar[attr]=this.proveedor[attr];
+                }
+                else{//si esta insertando, obtener el nuevo id
+                      this.proveedor.id=resp.data[0].id;
+                }            
+              //en cualquier caso, ejecutar un callback
+              onMantenimientoListener(resp,this.proveedor);
+            },
+            error:()=>{
+              resp={error:1,message:'Error del servidor'};
+              onMantenimientoListener(resp);
+            }
+          });
+     },
+      //unico que debe ser llamado fuera del ambito
+      show:function(title,proveedor,listener){
+        this.title=title;
+        isUpdating=(proveedor!=undefined); //si se pasa el proveedor como parametro
+        if(isUpdating) {
+          //actualizar, clonando el proveedor que viene
+          this.proveedor=$.extend(true, {}, proveedor); 
+          this.proveedorAuxiliar=proveedor;
+        }
+        else this.proveedor={ //sino, crear un nuevo proveedor
+              ruc:'',
+              razonSocial:'',
+              telefono:'',
+              email:'',
+              estado:'3',
+            };
+        onMantenimientoListener=listener;
+        $('#mantener-proveedor .label-floating').removeClass('is-empty');
+        $('#mantener-proveedor').modal('show');
+      },
+      //ocultar
+      close:function(){
+        $('#mantener-proveedor').modal('hide');
+      }
+    }  
+  });   
+</script>
+
+</div>

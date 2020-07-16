@@ -1,0 +1,169 @@
+<!--Buscar proveedor-->
+<div th:fragment="buscar-proveedor">
+
+  <div id="buscar-proveedor" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Buscar Proveedor</h4>
+        </div>
+        <div class="modal-body">
+              
+            <div class="card-content table-responsive">
+                <!--botón agregar nuevo-->
+                <div class="row col-md-12">              
+                    <!--búsqueda-->
+                    <div class="navbar-form navbar-right" role="search">
+                        <!--texto a buscar-->
+                        <div class="form-group  is-empty">
+                            <input type="text" class="form-control" placeholder="Buscar" v-model="busqueda.valor">
+                            <span class="material-input"></span>
+                        </div>
+                        <!--filtro-->
+                        <div class="form-group label-floating">       
+                          <select id="cmb-filtros" class="form-control" v-model="busqueda.filtroSeleccionadoId">
+                              <option v-for="filtro in busqueda.filtros"  v-bind:value="filtro.id">{{filtro.nombre}}</option>
+                          </select>
+                        </div>
+                        <!--botón-->
+                        <button @click="buscarProveedor" class="btn btn-white btn-round btn-just-icon">
+                            <i class="material-icons">search</i>
+                            <div class="ripple-container"></div>
+                        </button>
+                    </div>
+                </div>
+                <!--lista de proveedores en tabla-->
+                <table class="table lista">
+                    <thead class="text-primary">
+                        <th>Razón social</th>
+                        <th>RUC</th>
+                        <th>Email</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </thead>
+                    <tbody>
+                        <!--si no hay proveedores para mostrar-->
+                        <tr v-if="proveedores.length==0"><td colspan="6" textAlign="center">Lista Vacía</td></tr>
+
+                        <!--vista-->
+                        <tr v-for="(proveedor,index) in proveedores">
+                            <td>{{proveedor.razonSocial}}</td>
+                            <td>{{proveedor.ruc}}</td>
+                            <td>{{proveedor.email}}</td>
+                            <td>{{proveedor.telefono}}</td>
+                            <td>{{proveedor.email}}</td>
+                            <td>{{proveedor.estado}}</td>
+                            <td> 
+                              <div class="radio">
+                                <label>                                  
+                                    <input type="radio"  name="proveedorRadioGroup" v-bind:value="index" v-model="selectedProveedorIndex"/>  
+                                </label>
+                              </div>                            
+                            </td>
+                         </tr>
+                    </tbody>
+                </table>
+            </div>
+                            
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" @click="devolverProveedor" >Aceptar</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  
+<!--obtener servicio de proveedor-->
+<script th:src="@{/app/ProveedorService.js}"></script>
+<script type="text/javascript">
+                    var onSelectedProveedorlistener;        
+                    //modelo
+                    let data={
+                        selectedProveedorIndex:-1,
+                        proveedores:[],
+                        busqueda:{
+                            valor:'',
+                            filtroSeleccionadoId:1,
+                            filtros:[
+                                {
+                                    id:1,
+                                    nombre:'Ruc'
+                                },
+                                {
+                                    id:2,
+                                    nombre:'Nombre y/o apellido'
+                                }
+                            ]
+                        }
+
+                    };
+
+
+                    //vista-modelo
+                    var buscarProveedor = new Vue({
+                        el: "#buscar-proveedor",
+                        data,
+                        beforeCreate: function(){
+                            ProveedorService.get()
+                                           .then((proveedores)=>{                                                                                                                                                  
+                                                //obtener los estados de los proveedores
+                                                EstadoService.get('proveedor')
+                                                             .then((estadosTabla)=>{
+                                                                    for(var i in proveedores){
+                                                                        for(var ii in estadosTabla){
+                                                                            if(estadosTabla[ii].id==proveedores[i].estadoId){              
+                                                                                proveedores[i].estado=estadosTabla[ii].estado.descripcion;
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                    }
+
+                                                                    this.proveedores=proveedores;
+                                                                    this.$forceUpdate();
+                                                });
+                                            
+                                                
+                                            });
+
+                        }, //métodos
+                        methods:{
+                            onProveedoresGetListener:function (proveedores){                                                                                                                                                        
+                            	this.proveedores=proveedores; 
+                            },                           
+                            buscarProveedor: function(){                                
+                                if(this.busqueda.valor.trim().length>0)
+                                    ProveedorService.buscar(this.busqueda.valor,this.busqueda.filtroSeleccionadoId)
+                                                   .then(this.onProveedoresGetListener);
+                                else
+                                    ProveedorService.buscar('','')
+                                                   .then(this.onProveedoresGetListener);
+
+                            },
+                            devolverProveedor:function(){
+                                
+                                if(this.selectedProveedorIndex!=-1)
+                                    onSelectedProveedorlistener({error:0,message:'proveedor seleccionado'},this.proveedores[this.selectedProveedorIndex]);
+                                 else
+                                    onSelectedProveedorlistener({error:1,message:'Debe seleccionar un proveedor'});
+                            },
+                            //único que debe ser llamado fuera del ámbito
+                            show:function(listener){
+                              this.proveedores=[];
+                              onSelectedProveedorlistener=listener;                              
+                              $('#buscar-proveedor .label-floating').removeClass('is-empty');
+                              $('#buscar-proveedor').modal('show');
+                            },
+                            //ocultar
+                            close:function(){
+                              $('#buscar-proveedor').modal('hide');
+                            }
+                        }
+                    });
+        
+    </script>
+
+</div>

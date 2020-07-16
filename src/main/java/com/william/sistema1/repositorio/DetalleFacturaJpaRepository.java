@@ -1,0 +1,20 @@
+package com.william.sistema1.repositorio;
+
+import java.io.Serializable;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.william.sistema1.entidad.DetalleFactura;
+import com.william.sistema1.entidad.Factura;
+
+@Repository("detalleFacturaJpaRepository")
+public interface DetalleFacturaJpaRepository extends JpaRepository<DetalleFactura,Serializable> {
+
+	@Query(value="SELECT * FROM detalle_factura WHERE factura_id =:facturaId",nativeQuery = true)
+	List<DetalleFactura> findByFacturaId(@Param("facturaId") int facturaId);
+
+}

@@ -1,0 +1,24 @@
+.right{
+	float:right;
+}
+
+.full{
+	width: 100%;
+}
+
+.full.right *{
+	float:right;	
+}
+
+.flex-column {
+	display: flex;
+	flex-direction: column;
+}
+
+.flex-item-right{
+	align-self: flex-end;
+}
+
+.flex-item-center{
+	align-self: center;
+}

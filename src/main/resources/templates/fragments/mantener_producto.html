@@ -1,0 +1,155 @@
+<div th:fragment="mantener-producto">
+  <div id="mantener-producto" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">{{title}}</h4>
+        </div>
+        <div class="modal-body">
+          <form class="row" v-on:submit.prevent="guardarProducto()">
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group">
+                          <label class="control-label">Nombre</label>
+                          <input type="text" class="form-control" v-model="producto.descripcion"  required />
+                      </div>                      
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Estado</label>
+                          <select id="cmb-estados" class="form-control" v-model="producto.estado">
+                              <option v-for="(estado,index) in estados" v-bind:value="estado.id">{{estado.descripcion}}</option>
+                          </select>
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Precio al contado (S/.)</label>
+                          <input type="number" step="0.01" class="form-control" v-model="producto.precioVenta" required />
+                      </div>                      
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Stock</label>
+                          <input type="number" class="form-control" v-model="producto.stock" required />
+                      </div>                      
+                  </div>
+              </div>
+            <input type="submit" class="btn btn-default" value="Guardar" style="float:right" />
+          </form>
+        </div>
+        <div class="modal-footer">
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <script>  
+    var isUpdating=false;
+    var onMantenimientoListener;
+    var mantenerProducto = new Vue({
+      el: '#mantener-producto',
+      data:{
+        title:'Mantener Producto',
+        producto:{
+          descripcion:'',
+          /*precioCompra:0.0,*/
+          precioVenta:0.0,
+          stock:0,
+          estado:'1',
+        },
+        productoAuxiliar:{},
+        estados:[]
+      },
+      beforeCreate: function(){
+    	console.info("beforeCreate");
+        //obtener la lista de estados
+        EstadoService.get('producto')
+         .then((estados)=>{
+                this.estados=estados;
+         });		
+      },
+      methods:{
+        guardarProducto: function(){
+        	console.info("guardarProducto");
+            this.close();            
+            //ANTES DE ACTUALIZAR
+            //evitar actualizar, si la data es la misma
+            if(isUpdating){
+                let shouldUpdate=false; //debera actualizar
+                for(var attr in this.productoAuxiliar)
+                  if(this.productoAuxiliar[attr]!=this.producto[attr]){
+                    shouldUpdate=true;
+                    break;
+                  }
+                //si no deberá actualizarse
+                if(!shouldUpdate){
+                  onMantenimientoListener({ error:1, message:'No hay datos para actualizar'});
+                  return;
+               }
+            }
+            //AHORA GUARDAR O ACTUALIZAR
+            //guardar la data en el sistema (tanto actualizar como insertar)            
+            $.ajax({
+              url:'/productos',
+              method:(isUpdating?'put':'post'),
+              data:JSON.stringify(this.producto),
+              headers: {"content-type": "application/json"},
+              success:(resp)=>{
+                this.producto.estadodes=$('#cmb-estados').find(':selected').text();                              
+                if(resp.error==0)
+                  //si se esta actualizando
+                  if(isUpdating){
+                      for(var attr in this.productoAuxiliar)
+                        this.productoAuxiliar[attr]=this.producto[attr];
+                  }
+                  else{//si esta insertando, obtener el nuevo id
+                        this.producto.id=resp.data[0].id;
+                  }
+                //en cualquier caso, ejecutar un callback
+                onMantenimientoListener(resp,this.producto);
+              },
+              error:()=>{
+                resp={ error:1, message:'Error del servidor'};
+                onMantenimientoListener(resp);
+              }
+            });
+        },
+        //unico que debe ser llamado fuera del ambito
+        show: function(title,producto,listener){
+          console.info("show");
+          this.title=title;
+          isUpdating=(producto!=undefined); //si se paso el producto como parametro
+          if(isUpdating) { //actualizando
+            //actualizar, clonando el producto que viene
+            this.producto=$.extend(true, {}, producto); 
+            this.productoAuxiliar=producto;
+          }
+          else this.producto={ //sino, crear un nuevo producto
+                descripcion:'',
+                precioCompra:0.0,
+                precioVenta:0.0,
+                stock:0,
+                estado:'1',
+          };
+          onMantenimientoListener=listener;
+          $('#mantener-producto .label-floating').removeClass('is-empty');
+          $('#mantener-producto').modal('show');
+        },
+        //ocultar
+        close: function(){
+          console.info("close");
+          $('#mantener-producto').modal('hide');
+        }
+      }  
+    }); 
+  </script>
+
+</div>

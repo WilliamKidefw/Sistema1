@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<!--título de web, metas, dependencias CSS/JS-->
+<head th:include="fragments/header :: header (pageName='Generar factura')">
+</head>
+<body>
+    <div class="wrapper">
+        <div th:include="fragments/sidenav :: sidenav" class="sidebar" data-color="purple" data-image="../img/sidebar-1.jpg"></div>
+        <div class="main-panel">
+            <nav th:include="fragments/navbar :: navbar" class="navbar navbar-transparent navbar-absolute"></nav>
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="row">                        
+                        <div class="col-md-12">
+                            <div class="card ordenCompras">                            	
+                                <div class="card-header" data-background-color="purple">
+                                    <h4 class="title">Generar venta</h4>
+                                </div>
+                                <div id="factura" class="card-content table-responsive">
+                                    <form>
+                                        <fieldset>
+                                            <h5 class="text-primary">Datos Factura</h5>
+                                            <div class="row">
+                                              <div class="col-md-6">
+                                                  <div class="form-group">
+                                                      <label class="control-label"></label>
+                                                      <input type="text" class="form-control" v-model="codigoVenta" disabled="" />
+                                                  </div>
+                                              </div>
+                                            </div>
+                                            <div class="row">
+                                              <div class="col-md-4">
+                                                  <div class="form-group">
+                                                      <label class="control-label">Tipo documento</label>
+                                                      <div class="radio">
+                                                            <label>
+                                                                <input type="radio" name="optionsRadios" v-model="tipoVenta" value="boleta" checked>
+                                                                Boleta
+                                                            </label>
+                                                      </div>
+                                                      <div class="radio">
+                                                            <label>
+                                                                <input type="radio" name="optionsRadios" v-model="tipoVenta" value="facturas">
+                                                                Factura
+                                                            </label>
+                                                      </div>
+                                                  </div>
+                                              </div>
+                                              <div class="col-md-4">
+                                                  <div class="form-group">
+                                                      <label class="control-label">Fecha Emisión</label>
+                                                      <input type="date" id="fecha-emision" class="form-control" v-model="factura.fechaEmision" />
+                                                  </div>
+                                              </div>
+                                              <div class="col-md-4" v-if="tipoVenta=='facturas'">
+                                                  <div class="form-group">
+                                                      <label class="control-label">Fecha Vencimiento</label>
+                                                      <input type="date" class="form-control" v-model="factura.fechaVencimiento" v-bind:min="factura.fechaEmision" />
+                                                  </div>
+                                              </div>
+                                            </div>
+                                        </fieldset>
+                                        <!--formulario de cliente-->
+                                        <fieldset>
+                                            <h5 class="text-primary">Datos Cliente</h5>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Nombre</label>
+                                                          <input type="text" class="form-control" disabled v-model="cliente.nombreCompleto"/>
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                      <input type="button" @click="buscarCliente" class="btn btn-default right" value="Buscar" />
+                                                </div>
+                                            </div>
+                                            <div class="row">                                                
+                                                <div class="col-md-12">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Dirección</label>
+                                                          <textarea  v-model="cliente.direccionCliente" class="form-control" disabled></textarea>
+                                                      </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                      <div class="form-group">
+                                                          <label class="control-label">DNI o RUC</label>
+                                                          <input type="text" class="form-control" disabled v-model="cliente.rucODni"/>
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Telefono</label>
+                                                          <input type="text" class="form-control" disabled v-model="cliente.telefonoCliente"/>
+                                                      </div>
+                                                </div>
+                                            </div>
+                                        </fieldset>
+                                        <!--formulario de producto-->
+                                        <fieldset>
+                                            <h5 class="text-primary">Datos Producto</h5>
+                                            <div class="row">
+                                                <div class="col-md-4">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Código</label>
+                                                          <input type="text" class="form-control" v-model="producto.id" disabled />
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-5">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Nombre</label>
+                                                          <input type="text" class="form-control" disabled v-model="producto.descripcion"/>
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                      <input type="button" class="btn btn-default right" value="Buscar" @click="buscarProducto" />
+                                                </div>
+                                            </div>
+                                            <div class="row">                               
+                                                <div class="col-md-4">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Stock</label>
+                                                          <input type="text" class="form-control" disabled v-model="producto.stock"/>
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-4">
+                                                      <!--dependerá del plazo de pago-->
+                                                      <div class="form-group">
+                                                          <label class="control-label">Precio unitario</label>
+                                                          <input type="text" class="form-control" disabled v-model="producto.precioVenta"/>
+                                                      </div>
+                                                </div>
+                                                <div class="col-md-2">
+                                                      <div class="form-group">
+                                                          <label class="control-label">Cantidad</label>
+                                                          <input type="number" class="form-control"  v-model="producto.cantidad" placeholder="0" min="0" v-bind:max="producto.stock"/>
+                                                      </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">                               
+                                                <div class="col-md-12">
+                                                      <input type="button" class="btn btn-default right" value="Agregar" 
+                                                      @click="agregarProducto"/>
+                                                </div>
+                                            </div>
+                                            <!-- Listado de productos - detalle de orden compras -->
+                                            <table class="table lista">
+                                                <thead class="text-primary">
+                                                    <th>Código</th>
+                                                    <th>Nombre</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Prec. Venta</th>
+                                                    <th>SubTotal</th> <!--calcular-->
+                                                    <th>Acciones</th>
+                                                </thead>
+                                                <tbody>                                                        
+                                                    <!--si no hay productos mostrar-->
+                                                    <tr v-if="productos.length==0"><td colspan="6" textAlign="center">Lista Vacía</td></tr>
+                                                    <!--en otro caso, mostrar todos los productos-->
+                                                    <tr v-for="(producto,index) in productos">
+                                                        <td>{{producto.id}}</td>
+                                                        <td class="text-primary">{{producto.descripcion}}</td>
+                                                        <td class="text-primary">{{producto.cantidad}}</td>
+                                                        <td>S/.{{producto.precioVenta}}</td>
+                                                        <td class="text-primary">{{producto.precioVenta*producto.cantidad | currency}}</td>
+                                                        <td><a @click="quitarProducto(index)" href="#editar-producto">
+                                                            <i class="material-icons">clear</i>
+                                                        </a></td>                   
+                                                     </tr>
+                                                </tbody>
+                                            </table>
+                                        </fieldset>
+                                        <div class="row flex-column">
+                                                <div class="col-md-3 flex-item-right">                                             
+                                                        <div class="form-group">
+                                                            <label class="control-label">SubTotal
+                                                              <input type="text" class="form-control"  disabled="" v-model="factura.subTotal"/>
+                                                            </label>
+                                                        </div>                                                                                           
+                                                        <div class="form-group">
+                                                            <label class="control-label">IGV
+                                                              <input type="text" class="form-control"  disabled="" v-model="factura.igv"/>
+                                                            </label>
+                                                        </div>                                                                                                                                                                                            
+                                                        <div class="form-group">
+                                                            <label class="control-label">Total
+                                                              <input type="text" class="form-control"  disabled="" v-model="factura.total" />
+                                                            </label>
+                                                        </div>                                        
+                                                </div>                                         
+                                                <div class="form-group flex-item-center">
+                                                  <label>
+                                                    <input type="button" class="btn btn-default" value="Generar" @click="registrarFactura" />
+                                                  </label>
+                                                </div>                                               
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--footer-->
+            <footer class="footer" th:replace="fragments/footer :: footer"></footer>         
+        </div>
+    </div>
+<!--dependencias JS-->
+<div th:replace="fragments/footer_dependencies :: dependencies (pageType='system')"></div> 
+<!--modal de buscar producto-->
+<div th:replace="fragments/buscar_producto :: buscar-producto"></div> 
+<!--modal de buscar cliente-->
+<div th:replace="fragments/buscar_cliente :: buscar-cliente"></div>     
+<!--obtener servicio de venta-->
+<script th:src="@{/app/facturaService.js}"></script>
+<script th:src="@{/app/detalleVentaService.js}"></script>
+<script type="text/javascript">                
+var vm;
+$(document).ready(function() {
+	Vue.filter('currency', function (value) {
+	    return parseFloat(value).toFixed(2);
+	});
+	//modelo
+	//YYYY-MM-DD HH:MM:SS
+	var data={
+	    tipoVenta:'facturas',//facturas o boleta                        
+	    boletaId:1,//valor por defecto
+	    factura:{ 
+	      codigo:'0001-000001', //valor por defecto
+	      fechaEmision:'2019-01-01',
+	      fechaVencimiento: '2019-01-01',
+	      subTotal:0.0,
+	      igv:0.0,
+	      total:0.0                                                  
+	    },
+	    cliente:{
+	    	id:0,
+	    	rucODni:'',
+	    	nombreCompleto:'',
+	       direccionCliente:'',
+	       telefonoCliente:'',
+	       emailCliente:''
+	    },
+	    producto:{
+	      id:0,
+	      descripcion:'',
+	      precioCompra:0.0,
+	      precioVenta:0.0,
+	      stock:0,
+	      estado:'0',
+	      cantidad:0
+	    },
+	    productos:[],
+	    plazosPago:[],                        
+	    busqueda:{ }
+	};
+	var calcularTotal=function (val) {
+	console.info('calcularTotal');
+	   this.factura.igv=parseFloat(0.18*this.factura.subTotal).toFixed(2);
+	   this.factura.total = parseFloat(1.18*this.factura.subTotal).toFixed(2);
+	};
+	//vista-modelo
+	vm = new Vue({
+	    el: "#factura",data,
+	    beforeCreate: function(){
+	  	  console.info('beforeCreate');
+	        //obtener el último código de factura para generar un preview del siguiente
+	        FacturaService.getLastRowIndex()
+	        .then((index)=>{
+	            indiceTexto=(index+1)+"";
+	            prefix='00000';//prefijo
+	            this.factura.codigo='0001-'+(prefix.substr(0,6-indiceTexto.length)+indiceTexto);
+	        });        
+	    },//métodos
+	    watch:{  
+	      'factura.subTotal': calcularTotal,
+	    },
+	    computed:{
+	      codigoVenta: function(){
+	  	  	console.info('codigoVenta');	  	  	
+	      	return (this.tipoVenta=='facturas'?'FE'+this.factura.codigo:'BO'+this.boletaId);
+	      }
+	    },
+	    created: function(){
+	    	console.info('created');
+	        hoy=new Date();
+	        prefix=(hoy.getDate()<10 ?'0':'');  
+	        this.factura.fechaEmision= moment().format('YYYY-MM-DD')
+	        this.factura.fechaVencimiento= moment().format('YYYY-MM-DD')
+	    },
+	    methods:{
+	        registrarFactura: function(){
+	     		console.info('registrarFactura');
+		        axios({
+	         	  method: 'post',
+	         	  url: '/'+this.tipoVenta,
+	         	  data: JSON.stringify(this.factura),
+	         	  headers: { "content-type": "application/json" },
+	         	  params: {
+	         	    clienteId: this.cliente.id,
+	         	    detalle: JSON.stringify(this.productos)
+	         	  },
+	         	}).then(function (resp) {
+	         		modal('Generar Factura',resp.data.message);
+	                 //redireccionar al registro de ventas
+	                 if(resp.data.error==0) {
+	                   window.location="./registro_venta"
+	                 }
+	         	}).catch(function (error) {  
+	         		console.error(error);
+	         	});
+	        },
+	        buscarCliente: function(){
+	     	  	console.info('buscarCliente');
+	        	buscarCliente.show(
+		            //cuando se seleccione el cliente de la otra pantalla
+		            (resp,cliente)=>{
+		               modal('Buscar Cliente',resp.message);
+		               if(resp.error==0) {                                              
+		                 for(var attr in this.cliente)
+		                     this.cliente[attr]=cliente[attr];
+		               }
+		            });
+	        },                            
+	        realizarSumatoria: function(){
+	      	  console.info('realizarSumatoria');
+	            let sumatoria=0;
+	              for(var i in this.productos)                                
+	                sumatoria+=this.productos[i].cantidad*this.productos[i].precioVenta;
+	            this.factura.subTotal=sumatoria;
+	        },
+	        buscarProducto: function(){
+	     	  	console.info('buscarProducto');
+		          buscarProducto.show(
+		           (resp,producto)=>{
+		                   modal('Generar factura',resp.message);
+		                   if(resp.error==0) {
+		                     for(var attr in this.producto)
+		                         this.producto[attr]=producto[attr];
+		                     this.producto.cantidad=0;
+		                   }                        
+		           });
+	        },
+	        quitarProducto: function(index){
+	      	console.info('quitarProducto');
+	          this.productos.splice(index,1);
+	          this.realizarSumatoria();
+	          this.cleanProducto();
+	        },
+	        agregarProducto: function(){
+	      		console.info('agregarProducto');
+		          if(this.producto.id!=0){
+		            this.productos.push($.extend(true, {}, this.producto));
+		            this.realizarSumatoria();
+		            this.cleanProducto();
+		          } 
+	          	else modal('Generar factura','Seleccione primero un producto antes de agregar al carrito');
+	        },
+	        //limpiar formulario de producto
+	        cleanProducto: function(){
+	      	console.info('cleanProducto');
+	          this.producto={
+	              id:0,
+	              descripcion:'',
+	              precioCompra:0.0,
+	              precioVenta:0.0,                                  
+	              stock:0,
+	              estado:'0',
+	              cantidad:0,
+	            };    
+	        }
+	    }
+	});
+});
+</script>
+
+</body>
+
+
+</html>

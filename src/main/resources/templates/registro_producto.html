@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<!--titulo de web, metas, dependencias CSS/JS-->
+<head th:include="fragments/header :: header (pageName='Productos')">
+</head>
+<body>
+	<div class="wrapper">
+		<div th:include="fragments/sidenav :: sidenav" class="sidebar" data-color="purple" data-image="../img/sidebar-1.jpg"></div>
+        <div class="main-panel">
+            <nav th:include="fragments/navbar :: navbar" class="navbar navbar-transparent navbar-absolute"></nav>
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="row">                        
+                        <div class="col-md-12">
+                            <div class="card productos">
+                                <div class="card-header" data-background-color="purple">
+                                    <h4 class="title">Productos</h4>
+                                    <p class="category">Listado de Productos</p>
+                                </div>
+                                <div  id="lista-productos" class="card-content table-responsive">
+                                	<!--botón agregar nuevo-->
+                                    <div class="row col-md-12">             
+                                        <a id="btn-agregar-producto" 
+                                           class="btn btn-white btn-just-icon btn-round" @click="agregarProducto" 
+                                           href="#agregar-producto"
+                                           data-toggle="tooltip" 
+                                           title="Agregar producto">
+                                              <i class="material-icons">note_add</i>
+                                        </a>
+                                        <!--búsqueda-->
+                                        <div class="navbar-form navbar-right" role="search">
+    			                            <!--texto a buscar-->
+                                            <div class="form-group  is-empty">
+    			                                <input type="text" class="form-control" placeholder="Buscar" v-model="busqueda.valor">
+    			                                <span class="material-input"></span>
+    			                            </div>
+                                            <!--filtro-->
+                                            <div class="form-group label-floating">       
+                                              <select id="cmb-filtros" class="form-control" v-model="busqueda.filtroSeleccionadoId">
+                                                  <option v-for="filtro in busqueda.filtros"  v-bind:value="filtro.id">{{filtro.nombre}}</option>
+                                              </select>
+                                            </div>
+                                            <!--botón-->
+    			                            <button @click="buscarProducto" class="btn btn-white btn-round btn-just-icon">
+    			                                <i class="material-icons">search</i>
+    			                                <div class="ripple-container"></div>
+    			                            </button>
+    			                        </div>
+                                    </div>
+                                    <!--lista de productos en tabla-->
+                                    <table class="table lista">
+                                        <thead class="text-primary">
+                                            <th>Nombre</th>
+                                            <th>Precio</th>
+                                            <th>Stock</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </thead>
+                                        <tbody>      
+                                            <!--vista-->                                   
+                                            <tr v-for="producto in productos">
+                                                <td>{{producto.descripcion}}</td>
+                                                <td class="text-primary">S/. {{producto.precioVenta}}</td>       
+                                                <td class="text-primary">{{producto.stock}}</td>
+                                                <td class="text-primary">{{producto.estadodes}}</td>
+                                                <td><a @click="editarProducto(producto)" href="#editar-producto"><i class="material-icons">border_color</i></a></td>
+                                             </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--footer-->
+            <footer class="footer" th:replace="fragments/footer :: footer"></footer>        
+        </div>
+    </div>
+    <!--dependencias JS-->
+    <div th:replace="fragments/footer_dependencies :: dependencies (pageType='system')"></div> 
+    <div th:replace="fragments/mantener_producto :: mantener-producto"></div>
+    <!--obtener servicio de producto-->
+    <script th:src="@{/app/productoService.js}"></script>
+<script type="text/javascript">        
+    $(document).ready(function() {
+      //modelo
+      var data={
+          productos:[],
+          busqueda:{
+              valor:'',
+              filtroSeleccionadoId:1,
+              filtros:[{id:1, nombre:'código'},{id:2,nombre:'nombre'}]
+          }
+      };
+      //vista-modelo
+      var vm = new Vue({
+          el: "#lista-productos",
+          data,
+          beforeCreate: function(){
+         	 console.info("beforeCreate");
+              ProductoService.get()
+               .then((productos)=>{   
+                      this.updateEstado();                      
+                      this.productos=productos; 
+                  });
+          },//métodos
+          methods:{
+              onProductosGetListener:function (productos){
+                console.info("onProductosGetListener");
+                this.updateEstado();
+     			this.productos=productos;                                     
+              },
+              editarProducto: function(producto){
+             	 console.info("editarProducto");
+                 mantenerProducto.show('Editar producto',producto,
+                      (resp)=>{
+                             modal('Mantenimiento de productos',resp.message);
+                             this.updateEstado();
+                      });
+              },
+              agregarProducto: function(){
+             	 console.info("agregarProducto");
+                  mantenerProducto.show('Agregar producto',undefined,
+                      (resp,producto)=>{
+                              modal('Mantenimiento de productos',resp.message);
+                              if(resp.error==0) this.productos.push(producto);
+                              this.updateEstado();
+                      }
+                  );
+              },
+              buscarProducto: function(){        
+             	 console.info("buscarProducto");
+                  if(this.busqueda.valor.trim().length>0)
+                      ProductoService.buscar(this.busqueda.valor,this.busqueda.filtroSeleccionadoId).then(this.onProductosGetListener);
+                  else
+                      ProductoService.buscar('','').then(this.onProductosGetListener);
+              },
+              updateEstado: function(){
+             	 for(var i in productos){
+                   	  if(productos[i].estado==3){
+                   		productos[i].estadodes="Disponible";
+                       }else if (productos[i].estado==4){
+                     	  productos[i].estadodes="No Disponible";
+                       }
+                   }
+              }
+          }
+      });
+    });
+</script>
+</body>
+</html>

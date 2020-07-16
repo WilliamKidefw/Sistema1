@@ -1,0 +1,138 @@
+<div th:fragment="buscar-producto">
+  <div id="buscar-producto" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Buscar Producto</h4>
+        </div>
+        <div class="modal-body">
+            <div class="card-content table-responsive">
+                                   <!--botón agregar nuevo-->
+                					<div class="row col-md-12"> 
+	                                  <!--búsqueda-->
+	                                  <div class="navbar-form navbar-right" role="search">
+	                                      <!--texto a buscar-->
+	                                            <div class="form-group  is-empty">
+	                                          <input type="text" class="form-control" placeholder="Buscar" v-model="busqueda.valor">
+	                                          <span class="material-input"></span>
+	                                      </div>
+	                                            <!--filtro-->
+	                                            <div class="form-group label-floating">       
+	                                              <select id="cmb-filtros" class="form-control" v-model="busqueda.filtroSeleccionadoId">
+	                                                  <option v-for="filtro in busqueda.filtros"  v-bind:value="filtro.id">{{filtro.nombre}}</option>
+	                                              </select>
+	                                            </div>
+	                                            <!--botón-->
+	                                      <button @click="buscarProducto" class="btn btn-white btn-round btn-just-icon">
+	                                          <i class="material-icons">search</i>
+	                                          <div class="ripple-container"></div>
+	                                      </button>
+	                                  </div>
+                                    </div>
+                                    <!--lista de productos en tabla-->
+                                    <table class="table lista">
+                                        <thead class="text-primary">
+                                            <th>Nombre</th>
+                                            <th>Precio</th>
+                                            <th>Stock</th>
+                                            <th>Estado</th>
+                                            <th>Selección</th>
+                                        </thead>
+                                        <tbody>      
+                                            <!--si no hay productos mostrar-->
+                                            <tr v-if="productos.length==0"><td colspan="6" textAlign="center">Lista Vacía</td></tr>
+                                            <!--vista-->                                   
+                                            <tr v-for="(producto,index) in productos">
+                                                <td>{{producto.descripcion}}</td>
+                                                <td class="text-primary">S/. {{producto.precioVenta}}</td>    
+                                                <td class="text-primary">{{producto.stock}}</td>
+                                                <td class="text-primary">{{producto.estadodes}}</td>
+                                                <td> 
+                                                  <div class="radio">
+                                                    <label>                                  
+                                                        <input type="radio"  name="productoRadioGroup" v-bind:value="index" v-model="selectedProductoIndex"/>  
+                                                    </label>
+                                                  </div>                            
+                                                </td>
+                                             </tr>
+                                        </tbody>
+                                    </table>
+          	</div>
+          </div>
+          <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal" @click="devolverProducto" >Aceptar</button>
+          </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+<!--obtener servicio de producto-->
+<script th:src="@{/app/productoService.js}"></script>
+<script type="text/javascript">        
+var onSelectedProductolistener;
+//vista-modelo
+var buscarProducto = new Vue({
+    el: "#buscar-producto",
+    data: {
+     selectedProductoIndex:-1,
+     productos:[],
+     busqueda:{
+            valor:'',
+            filtroSeleccionadoId:1,
+            filtros:[{id:1,nombre:'código'},{id:2,nombre:'nombre'}]
+        }
+    },
+    beforeCreate: function(){
+    console.info("beforeCreate");
+       ProductoService.get()
+       .then((productos)=>{
+    	    this.updateEstado();  
+            this.productos=productos;          
+        });
+    }, //métodos
+    methods:{
+        onProductosGetListener: function (productos){
+        	console.info("onProductosGetListener");
+        	this.updateEstado();
+            this.productos=productos;
+        },
+        devolverProducto: function(){     
+        	console.info("devolverProducto");
+            if(this.selectedProductoIndex!=-1)
+                onSelectedProductolistener({error:0,message:'producto seleccionado'},this.productos[this.selectedProductoIndex]);
+             else
+                onSelectedProductolistener({error:1,message:'Debe seleccionar un producto'});
+        },
+        buscarProducto: function(){ 
+        	console.info("buscarProducto");
+            if(this.busqueda.valor.trim().length>0)
+                ProductoService.buscar(this.busqueda.valor,this.busqueda.filtroSeleccionadoId).then(this.onProductosGetListener);
+            else
+                ProductoService.buscar('','').then(this.onProductosGetListener);
+        },
+        show: function(listener){
+        console.info("show");
+          this.productos=[];
+          onSelectedProductolistener=listener;                              
+          $('#buscar-producto .label-floating').removeClass('is-empty');
+          $('#buscar-producto').modal('show');
+        },
+        //ocultar
+        close: function(){
+        console.info("close");
+          $('#buscar-producto').modal('hide');
+        },
+        updateEstado: function(){
+        console.info("updateEstado");
+        	 for(var i in productos){
+              	  if(productos[i].estado==1){
+              		productos[i].estadodes="Disponible";
+                  }else if (productos[i].estado==2){
+                	  productos[i].estadodes="No Disponible";
+                  }
+              }
+         }
+    }
+});
+</script>
+</div><!-- /.modal -->

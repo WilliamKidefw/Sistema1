@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<!--titulo de web, metas, dependencias CSS/JS-->
+<head th:include="fragments/header :: header (pageName='Clientes')">
+</head>
+<body>
+    <div class="wrapper">
+        <div th:include="fragments/sidenav :: sidenav" class="sidebar" data-color="purple" data-image="../img/sidebar-1.jpg"></div>
+        <div class="main-panel">
+            <nav th:include="fragments/navbar :: navbar" class="navbar navbar-transparent navbar-absolute"></nav>
+            <div class="content">
+                <div class="container-fluid">
+                    <div class="row">                        
+                        <div class="col-md-12">
+                            <div class="card clientes">
+                                <div class="card-header" data-background-color="purple">
+                                    <h4 class="title">Clientes</h4>
+                                    <p class="category">Listado de Clientes</p>
+                                </div>
+                                <div  id="lista-clientes" class="card-content table-responsive">
+                                    <!--botón agregar nuevo-->
+                                    <div class="row col-md-12">             
+                                        <a id="btn-agregar-cliente" 
+                                           class="btn btn-white btn-just-icon btn-round" @click="agregarCliente" 
+                                           href="#agregar-cliente"
+                                           data-toggle="tooltip" 
+                                           title="Agregar cliente">
+                                              <i class="material-icons">note_add</i>
+                                        </a>
+                                        <!--busqueda-->
+                                        <div class="navbar-form navbar-right" role="search">
+                                            <!--texto a buscar-->
+                                            <div class="form-group  is-empty">
+                                                <input type="text" class="form-control" placeholder="Buscar" v-model="busqueda.valor">
+                                                <span class="material-input"></span>
+                                            </div>
+                                            <!--filtro-->
+                                            <div class="form-group label-floating">       
+                                              <select id="cmb-filtros" class="form-control" v-model="busqueda.filtroSeleccionadoId">
+                                                  <option v-for="filtro in busqueda.filtros"  v-bind:value="filtro.id">{{filtro.nombre}}</option>
+                                              </select>
+                                            </div>
+                                            <!--boton-->
+                                            <button @click="buscarCliente" class="btn btn-white btn-round btn-just-icon">
+                                                <i class="material-icons">search</i>
+                                                <div class="ripple-container"></div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!--lista de clientes en tabla-->
+                                    <table class="table lista">
+                                        <thead class="text-primary">
+                                            <th>RUC o DNI</th>
+                                            <th>Nombre completo</th>
+                                            <th>Email</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </thead>
+                                        <tbody>      
+                                            <!--vista-->
+                                            <tr v-for="cliente in clientes">
+                                                <td>{{cliente.rucODni}}</td>
+                                                <td>{{cliente.nombreCompleto}}</td>
+                                                <td>{{cliente.emailCliente}}</td>
+                                                <td>{{cliente.estadodes}}</td>
+                                                <td><a @click="editarCliente(cliente)" href="#editar-cliente"><i class="material-icons">border_color</i></a></td>
+                                             </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--footer-->
+            <footer class="footer" th:replace="fragments/footer :: footer"></footer> 
+        
+        </div>
+    </div>
+
+<!--dependencias JS-->
+<div th:replace="fragments/footer_dependencies :: dependencies (pageType='system')"></div> 
+<div th:replace="fragments/mantener_cliente :: mantener-cliente"></div>
+<!--obtener servicio de cliente-->
+<script th:src="@{/app/ClienteService.js}"></script>
+<script type="text/javascript">        
+$(document).ready(function() {
+   //modelo
+   var data={
+       clientes:[],
+       busqueda:{
+           valor:'',
+           filtroSeleccionadoId:1,
+           filtros:[{id:1, nombre:'Dni o Ruc' },{id:2,nombre:'Nombre y/o apellido'}]
+       }
+   };
+
+    //vista-modelo
+    var vm = new Vue({
+        el: "#lista-clientes",
+        data,
+        beforeCreate: function(){
+        	console.info("beforeCreate");
+            ClienteService.get()
+            .then((clientes)=>{    
+            	this.updateEstado();
+              this.clientes=clientes;      
+           });
+        }, //methods
+        methods:{
+            onClientesGetListener: function (clientes){
+            	console.info("onClientesGetListener");
+            	this.updateEstado();
+                this.clientes=clientes;                
+            },
+            editarCliente: function(cliente){
+            	console.info("editarCliente");
+                mantenerCliente.show('Editar cliente',cliente,
+                    //cuando se modifique el cliente en el sistema
+                    (resp)=>{
+                            modal('Mantenimiento de clientes',resp.message);
+                            this.updateEstado();
+                    });
+            },
+            agregarCliente: function(){
+            	console.info("agregarCliente");
+                mantenerCliente.show('Agregar cliente',undefined,
+                    (resp,cliente)=>{
+                            modal('Mantenimiento de clientes',resp.message);
+                            if(resp.error==0) this.clientes.push(cliente);
+                            this.updateEstado();
+                    }
+                );
+            },
+            buscarCliente: function(){
+				console.info("buscarCliente");                                
+                if(this.busqueda.valor.trim().length>0)
+                    ClienteService.buscar(this.busqueda.valor,this.busqueda.filtroSeleccionadoId).then(this.onClientesGetListener);
+                else
+                    ClienteService.buscar('','').then(this.onClientesGetListener);
+            },
+            updateEstado: function(){
+	           	 for(var i in clientes){
+	            	if(clientes[i].estado==1){
+	            		 clientes[i].estadodes="Habilitado";
+	                }else if (clientes[i].estado==2){
+	               	 clientes[i].estadodes="No Habilitado";
+	                }               
+	           	 }
+           }
+        }
+    });
+});
+</script>
+</body>
+</html>

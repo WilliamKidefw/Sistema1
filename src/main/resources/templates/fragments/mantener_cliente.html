@@ -1,0 +1,173 @@
+<div th:fragment="mantener-cliente">
+  <div id="mantener-cliente" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">{{title}}</h4>
+        </div>
+        <div class="modal-body">
+          <form class="row" v-on:submit.prevent="guardarCliente()">
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group">
+                          <label class="control-label">Ruc o DNI</label>
+                          <input type="text" class="form-control" v-model="cliente.rucODni"  required />
+                      </div>                      
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Estado</label>
+                          <select id="cmb-estados" class="form-control" v-model="cliente.estado">
+                              <option v-for="(estado,index) in estados"  v-bind:value="estado.id">{{estado.descripcion}}</option>
+                          </select>
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Nombre completo</label>
+                          <input type="text" class="form-control" v-model="cliente.nombreCompleto" required />
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Direccion</label>
+                          <input type="text" class="form-control" v-model="cliente.direccionCliente" required />
+                      </div>                      
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Telefono</label>
+                          <input type="text" class="form-control" v-model="cliente.telefonoCliente" required />
+                      </div>
+                  </div>
+              </div>
+              <div class="row">
+                  <div class="col-md-12">
+                      <div class="form-group label-floating">
+                          <label class="control-label">Email</label>
+                          <input type="email" class="form-control" v-model="cliente.emailCliente" required />
+                      </div>                      
+                  </div>
+              </div>
+            <input type="submit" class="btn btn-default" value="Guardar" style="float:right" />
+          </form>
+        </div>
+       <div class="modal-footer">
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+ <script>
+      
+    var isUpdating=false;
+    var onMantenimientoListener;
+    var mantenerCliente = new Vue({
+      el: '#mantener-cliente',
+      data:{
+        title:'Mantener Cliente',
+        cliente:{
+          rucODni:'',
+          nombreCompleto:'',
+          direccionCliente:'',
+          telefonoCliente:'',
+          emailCliente:'',
+          estado:'3',
+        },
+        clienteAuxiliar:{},
+        estados:[]
+      },
+      beforeCreate: function(){
+    	  console.info("beforeCreate");
+        //obtener la lista de estados de cliente
+        EstadoService.get('cliente')
+            .then((estados)=>{
+               this.estados=estados;
+        });
+      },
+      methods:{
+        guardarCliente: function(){
+        	console.info("guardarCliente");
+            this.close();            
+            //ANTES DE ACTUALIZAR
+            //evitar actualizar, si la data es la misma
+            if(isUpdating){
+                let shouldUpdate=false; //deberia actualizar
+                for(var attr in this.clienteAuxiliar)
+                  if(this.clienteAuxiliar[attr]!=this.cliente[attr]){
+                    shouldUpdate=true;
+                    break;
+                  }
+                //si no deberá actualizarse
+                if(!shouldUpdate){
+                  onMantenimientoListener({error:1,message:'No hay datos para actualizar'});
+                  return;
+               }
+            }
+            //AHORA GUARDAR O ACTUALIZAR
+            //guardar la data en el sistema (tanto actualizar como insertar)            
+            $.ajax({
+              url:'/clientes',
+              method:(isUpdating?'put':'post'),
+              data:JSON.stringify(this.cliente),
+              headers: {"content-type": "application/json"},
+              success:(resp)=>{              
+                this.cliente.estadodes=$('#cmb-estados').find(':selected').text();                              
+                if(resp.error==0)
+                  //si se esta actualizando
+                  if(isUpdating){
+                      for(var attr in this.clienteAuxiliar)
+                        this.clienteAuxiliar[attr]=this.cliente[attr];
+                  }
+                  else{//si esta insertando, obtener el nuevo id
+                        this.cliente.id=resp.data[0].id;
+                  }
+                
+                //en cualquier caso, ejecutar un callback
+                onMantenimientoListener(resp,this.cliente);
+              },
+              error:()=>{
+                resp={error:1,message:'Error del servidor'};
+                onMantenimientoListener(resp);
+              }
+            });
+        },
+        //Unico que debe ser llamado fuera del ambito
+        show: function(title,cliente,listener){
+          console.info("show");
+          this.title=title;
+          isUpdating=(cliente!=undefined); //si se paso el cliente como parametro
+          if(isUpdating) {
+            //actualizar, clonando el cliente que viene
+            this.cliente=$.extend(true, {}, cliente); 
+            this.clienteAuxiliar=cliente;
+          }
+          else this.cliente={ //sino, crear un nuevo cliente
+                rucODni:'',
+                nombreCompleto:'',
+                direccionCliente:'',
+                telefonoCliente:'',
+                emailCliente:'',
+                estado:'3',
+          };
+          onMantenimientoListener=listener;
+          $('#mantener-cliente .label-floating').removeClass('is-empty');
+          $('#mantener-cliente').modal('show');
+        },
+        //ocultar
+        close: function(){
+        	console.info("close");
+          $('#mantener-cliente').modal('hide');
+        }
+      }  
+    });  
+  </script>
+</div>

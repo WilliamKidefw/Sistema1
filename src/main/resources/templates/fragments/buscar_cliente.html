@@ -1,0 +1,148 @@
+<!--Buscar cliente-->
+<div th:fragment="buscar-cliente">
+  <div id="buscar-cliente" class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog  modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">Buscar Cliente</h4>
+        </div>
+        <div class="modal-body">              
+            <div class="card-content table-responsive">
+                <!--botón agregar nuevo-->
+                <div class="row col-md-12">              
+                    <!--búsqueda-->
+                    <div class="navbar-form navbar-right" role="search">
+                        <!--texto a buscar-->
+                        <div class="form-group  is-empty">
+                            <input type="text" class="form-control" placeholder="Buscar" v-model="busqueda.valor">
+                            <span class="material-input"></span>
+                        </div>
+                        <!--filtro-->
+                        <div class="form-group label-floating">       
+                          <select id="cmb-filtros" class="form-control" v-model="busqueda.filtroSeleccionadoId">
+                              <option v-for="filtro in busqueda.filtros"  v-bind:value="filtro.id">{{filtro.nombre}}</option>
+                          </select>
+                        </div>
+                        <!--boton-->
+                        <button @click="buscarCliente" class="btn btn-white btn-round btn-just-icon">
+                            <i class="material-icons">search</i>
+                            <div class="ripple-container"></div>
+                        </button>
+                    </div>
+                </div>
+                <!--lista de clientes en tabla-->
+                <table class="table lista">
+                    <thead class="text-primary">
+                        <th>RUC o DNI</th>
+                        <th>Nombre completo</th>
+                        <th>Dirección</th>
+                        <th>Telefono</th>
+                        <th>Email</th>
+                        <th>Estado</th>
+                        <th>Selección</th>
+                    </thead>
+                    <tbody>
+                        <!--si no hay clientes para mostrar-->
+                        <tr v-if="clientes.length==0"><td colspan="6" textAlign="center">Lista Vacia</td></tr>
+                        <!--vista-->
+                        <tr v-for="(cliente,index) in clientes">
+                            <td>{{cliente.rucODni}}</td>
+                            <td>{{cliente.nombreCompleto}}</td>
+                            <td>{{cliente.direccionCliente}}</td>
+                            <td>{{cliente.telefonoCliente}}</td>
+                            <td>{{cliente.emailCliente}}</td>
+                            <td>{{cliente.estadodes}}</td>
+                            <td> 
+                              <div class="radio">
+                                <label>                                  
+                                    <input type="radio"  name="clienteRadioGroup" v-bind:value="index" v-model="selectedClienteIndex"/>  
+                                </label>
+                              </div>                            
+                            </td>
+                         </tr>
+                    </tbody>
+                </table>
+            </div>                        
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal" @click="devolverCliente" >Aceptar</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+<!--obtener servicio de cliente-->
+<script th:src="@{/app/ClienteService.js}"></script>
+<script type="text/javascript">
+var onSelectedClientelistener;        
+//modelo
+let data={
+    selectedClienteIndex:-1,
+    clientes:[],
+    busqueda:{
+        valor:'',
+        filtroSeleccionadoId:1,
+        filtros:[{id:1,nombre:'Dni o Ruc'},{id:2,nombre:'Nombre y/o apellido'}]
+    }
+};
+
+//vista-modelo
+var buscarCliente = new Vue({
+    el: "#buscar-cliente",
+    data,
+    beforeCreate: function(){
+    	console.info("beforeCreate");
+        ClienteService.get()
+        .then((clientes)=>{
+        	this.updateEstado();
+            this.clientes=clientes;
+            this.$forceUpdate();             
+         });
+
+    }, //metodos
+    methods:{
+        onClientesGetListener: function (clientes){   
+        	console.info("onClientesGetListener");
+        	this.updateEstado();
+            this.clientes=clientes;                        
+        },                           
+        buscarCliente: function(){
+        	console.info("buscarCliente");
+            if(this.busqueda.valor.trim().length>0)
+                ClienteService.buscar(this.busqueda.valor,this.busqueda.filtroSeleccionadoId).then(this.onClientesGetListener);
+            else
+                ClienteService.buscar('','').then(this.onClientesGetListener);
+        },
+        devolverCliente: function(){
+        	console.info("devolverCliente");
+            if(this.selectedClienteIndex!=-1)
+                onSelectedClientelistener({error:0,message:'cliente seleccionado'},this.clientes[this.selectedClienteIndex]);
+             else
+                onSelectedClientelistener({error:1,message:'Debe seleccionar un cliente'});
+        },
+        show: function(listener){
+        	console.info("show");
+	        this.clientes=[];
+	        onSelectedClientelistener=listener;                              
+	        $('#buscar-cliente .label-floating').removeClass('is-empty');
+	        $('#buscar-cliente').modal('show');
+        },
+        //ocultar
+        close: function(){
+        	console.info("close");
+          $('#buscar-cliente').modal('hide');
+        },
+        updateEstado: function(){
+         for(var i in clientes){
+           	if(clientes[i].estado==3){
+           		 clientes[i].estadodes="Habilitado";
+               }else if (clientes[i].estado==4){
+              	 clientes[i].estadodes="No Habilitado";
+               }               
+          	 }
+      	}
+    }
+});       
+</script>
+
+</div>

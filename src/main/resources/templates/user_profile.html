@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+
+<!--título de web, metas, dependencias CSS/JS-->
+<head th:include="fragments/header :: header (pageName='Perfill de usuario')">
+</head>
+
+<body>
+    <div class="wrapper">
+        <!--sidenav-->
+        <div th:include="fragments/sidenav :: sidenav" class="sidebar" data-color="purple" data-image="../static/img/sidebar-1.jpg" th:data-image="@{/img/sidebar-1.png}"></div>
+
+        <!--menu-->
+        <div class="main-panel">
+            <nav th:include="fragments/navbar :: navbar" class="navbar navbar-transparent navbar-absolute"></nav>
+            <div class="content" id="user-profile">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="card">
+                                <div class="card-header" data-background-color="purple">
+                                    <h4 class="title">Perfil de empleado</h4>
+                                </div>
+                                <div class="card-content">
+                                    
+                                        <div class="row">                                          
+                                            <div class="col-md-6">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Usuario</label>
+                                                    <input type="text" class="form-control" v-model="user.username">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Correo</label>
+                                                    <input type="email" class="form-control" v-model="user.username">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Nombre completo</label>
+                                                    <input type="text" class="form-control" v-model="empleado.nombres">
+                                                </div>
+                                            </div>                                            
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Dni</label>
+                                                    <input type="text" class="form-control">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Telefono</label>
+                                                    <input type="text" class="form-control">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group label-floating">
+                                                    <label class="control-label">Sueldo</label>
+                                                    <input type="text" class="form-control" disabled>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card card-profile">
+                                <div class="card-avatar">
+                                    <a href="#pablo">
+                                        <img class="img" v-bind:src="empleado.fotoUrl" />
+                                    </a>
+                                </div>
+                                <div class="content">
+                                    <h6 class="category text-gray">{{empleado.tipoEmpleado}}</h6>
+                                    <h4 class="card-title">{{empleado.nombres}}</h4>
+                                    <p class="card-content"><!--empty--></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+           <!--footer-->
+            <footer class="footer" th:replace="fragments/footer :: footer"></footer> 
+        </div>
+    </div>
+</body>
+<!--dependencias JS-->    
+    <div th:replace="fragments/footer_dependencies :: dependencies (pageType='system')"></div> 
+
+</html>

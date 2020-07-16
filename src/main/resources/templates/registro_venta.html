@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<!--título de web, metas, dependencias CSS/JS-->
+<head th:include="fragments/header :: header (pageName='Ventas - Factura')">
+</head>
+<body>
+    <div class="wrapper">
+        <div th:include="fragments/sidenav :: sidenav" class="sidebar" data-color="purple" data-image="../img/sidebar-1.jpg"></div>
+        <div class="main-panel">
+            <nav th:include="fragments/navbar :: navbar" class="navbar navbar-transparent navbar-absolute"></nav>
+            <div class="content" id="lista-ventas">
+                <div class="container-fluid">
+                    <div class="row">                        
+                        <div class="col-md-12">
+                            <div class="card ventas">
+                                <div class="card-header" data-background-color="purple">
+                                    <h4 class="title">Ventas</h4>
+                                    <p class="category">Listado de Facturas</p>
+                                </div>
+                                <div class="card-content table-responsive">
+                                	<!--botón agregar nuevo-->
+                                    <div class="row col-md-12">             
+                                        <a id="btn-agregar-venta" 
+                                           class="btn btn-white btn-just-icon btn-round"
+                                           href="./generar_factura"
+                                           data-toggle="tooltip" 
+                                           title="Generar factura">
+                                              <i class="material-icons">note_add</i>
+                                        </a>                                        
+                                    </div>
+                                    <!--lista de ventas en tabla-->
+                                    <table class="table lista">
+                                        <thead class="text-primary">
+                                            <th>Codigo</th>
+                                            <th>Cliente</th>
+                                            <th>Total</th>
+                                            <th>Fecha</th>
+                                            <th>Acciones</th>
+                                        </thead>
+                                        <tbody>     
+                                            <!--si no hay productos mostrar-->
+                                            <tr v-if="ventas.length==0"><td colspan="6" textAlign="center">Lista Vacia</td></tr>
+                                            <!--vista-->                                   
+                                            <tr v-for="venta in ventas">
+                                                <td>  {{(venta.tipo=='facturas'? 'FE'+venta.codigo : 'N°'+venta.id )}}</td>
+                                                <td>{{venta.cliente.nombreCompleto}}</td>
+                                                <td class="text-primary">S/. {{venta.total}}</td>
+                                                <td>{{venta.fechaEmision}}</td>                 
+                                                <td>
+                                                    <a @click="verVenta(venta)" href="#ver-ordenCompra"><i class="material-icons">visibility</i></a>
+                                                    <button @click="anularFactura(venta)" v-if="venta.codigo!=undefined && venta.anulado==false" class="btn btn-default">Anular</button>                                                   
+                                                </td>
+                                             </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--footer-->
+            <footer class="footer" th:replace="fragments/footer :: footer"></footer> 
+        </div>
+    </div>
+<!--dependencias JS-->
+<div th:replace="fragments/footer_dependencies :: dependencies (pageType='system')"></div> 
+<div th:replace="fragments/ver_venta :: ver-venta"></div>
+
+
+<script type="text/javascript">        
+$(document).ready(function() {
+   //modelo
+   var data={
+       ventas:[],
+       notasCredito:[],
+       busqueda:{valor:'',filtroSeleccionadoId:1,
+           filtros:[{id:1,nombre:'codigo'},{id:2,nombre:'fecha'}]
+       }
+   };
+   //vista-modelo
+   var vm = new Vue({
+       el: "#lista-ventas",
+       data,
+       beforeCreate: function(){
+    	   console.info("beforeCreate");
+           //this.ventas=[];
+           FacturaService.get().then((facturas)=>{
+                for(var i in facturas){                
+                    facturas[i].tipo="facturas";
+                    if(!facturas[i].anulado)
+                    facturas[i].anulado=false;
+                    this.ventas.push(facturas[i]);
+                };
+            }).catch((error)=>{
+            	console.error(error);
+            });                      
+       }, //metodos
+       methods:{
+           onVentasGetListener: function (ventas){
+        	   console.info("onVentasGetListener");
+              this.ventas=ventas;
+           },
+           editarVenta: function(venta){
+        	   console.info("onVentasGetListener");
+           },
+           agregarVenta: function(){
+        	   console.info("agregarVenta");
+
+           },
+           buscarVenta: function(){  
+        	   console.info("buscarVenta");
+
+           },
+           verVenta: function(venta){
+        	   console.info("verVenta");
+               verVenta.show(venta);
+           },
+           anularFactura: function(venta){
+        	   console.info("anularFactura");
+           }
+       }
+   });         
+});
+</script>
+</body>
+</html>
